@@ -1,0 +1,38 @@
+# ── Node / Frontend ───────────────────────────────────────
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+node_modules
+dist
+dist-ssr
+*.local
+
+# ── Environment / Secrets ─────────────────────────────────
+# Never commit real secrets
+.env
+backend/.env
+# But DO commit the examples and the Vite env files (they have no secrets)
+!.env.example
+!backend/.env.example
+!.env.development
+!.env.production
+
+# ── Go / Backend ──────────────────────────────────────────
+backend/server
+backend/seed
+# Go test cache
+*.test
+
+# ── Editor ────────────────────────────────────────────────
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

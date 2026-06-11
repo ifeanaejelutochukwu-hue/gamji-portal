@@ -1,0 +1,63 @@
+version: '3.9'
+
+services:
+  # ── PostgreSQL ─────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: gamji_portal
+      POSTGRES_USER: gamji
+      POSTGRES_PASSWORD: gamji_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gamji -d gamji_portal"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ── Go API Backend ─────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: 8080
+      DATABASE_URL: postgres://gamji:gamji_dev_password@db:5432/gamji_portal?sslmode=disable
+      JWT_SECRET: dev_jwt_secret_replace_in_production_32chars
+      JWT_EXPIRY_HOURS: 24
+      ALLOWED_ORIGINS: http://localhost:3000
+      SMTP_HOST: smtp.gmail.com
+      SMTP_PORT: 587
+      SMTP_USER: dev@example.com
+      SMTP_PASS: dev_password
+      SMTP_FROM: "Gamji Portal <dev@example.com>"
+      FRONTEND_URL: http://localhost:3000
+    ports:
+      - "8080:8080"
+
+  # ── React Frontend ─────────────────────────────────────
+  frontend:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    environment:
+      VITE_API_URL: http://localhost:8080
+      VITE_SHOW_QUICK_LOGIN: "true"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

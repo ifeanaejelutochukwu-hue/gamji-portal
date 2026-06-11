@@ -1,0 +1,6 @@
+{
+  "name": "Nursing Portal Login",
+  "description": "A secure, responsive login page for a College of Nursing portal utilizing Supabase authentication.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
