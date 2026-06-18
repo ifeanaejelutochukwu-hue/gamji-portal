@@ -232,6 +232,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLogin }) => {
           <div className="text-center text-sm text-slate-500 pt-4 flex flex-col items-center gap-3 font-sans">
              <p>Need help accessing your account? <br/> <a href="#" className="font-medium text-nursing-600 hover:underline">Contact IT Support</a></p>
              
+             {/* Only show backend config in development */}
+             {import.meta.env.VITE_SHOW_QUICK_LOGIN === 'true' && (
              <button
                type="button"
                onClick={() => setShowConfig(!showConfig)}
@@ -240,9 +242,10 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLogin }) => {
                <Settings className="w-3.5 h-3.5" />
                {showConfig ? 'Hide Go Backend Settings' : 'Configure Go Lang Backend'}
              </button>
+             )}
           </div>
 
-          {showConfig && (
+          {import.meta.env.VITE_SHOW_QUICK_LOGIN === 'true' && showConfig && (
             <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 shadow-inner space-y-4 text-left animate-fade-in-up font-sans">
               <div className="flex items-center justify-between">
                 <h4 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">

@@ -106,11 +106,20 @@ export interface AdmissionApplication {
 const STORAGE_PREFIX = 'gamji_portal_';
 
 export const getGoBackendConfig = () => {
+  const envUrl = import.meta.env.VITE_API_URL;
+
   if (typeof window === 'undefined') {
-    return { enabled: false, url: import.meta.env.VITE_API_URL || 'http://localhost:8080' };
+    return { enabled: !!envUrl, url: envUrl || 'http://localhost:8080' };
   }
+
+  // If VITE_API_URL is set (production), always use it — no manual toggle needed
+  if (envUrl && envUrl !== 'http://localhost:8080') {
+    return { enabled: true, url: envUrl };
+  }
+
+  // In development, respect the manual localStorage toggle
   const enabled = localStorage.getItem(STORAGE_PREFIX + 'go_enabled') === 'true';
-  const url = localStorage.getItem(STORAGE_PREFIX + 'go_url') || import.meta.env.VITE_API_URL || 'http://localhost:8080';
+  const url = localStorage.getItem(STORAGE_PREFIX + 'go_url') || envUrl || 'http://localhost:8080';
   return { enabled, url };
 };
 
