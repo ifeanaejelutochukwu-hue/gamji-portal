@@ -578,6 +578,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
                    <option value="Registrar">Registrar</option>
                  </select>
               </div>
+              {!currentStaff.id && (
+                <Input label="Initial Password" type="password" placeholder="Min 8 characters" value={(currentStaff as any).password || ''} onChange={e => setCurrentStaff({...currentStaff, ...(currentStaff as any), password: e.target.value})} required />
+              )}
               <Button type="submit" className="w-full mt-2" disabled={saving}>{saving ? <Loader2 className="animate-spin" /> : 'Save'}</Button>
             </form>
           </div>
@@ -594,6 +597,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
             </div>
             <form onSubmit={handleSaveStudent} className="p-6 space-y-4">
               <Input label="Full Name" value={currentStudent.full_name || ''} onChange={e => setCurrentStudent({...currentStudent, full_name: e.target.value})} required />
+              <Input label="Email" type="email" value={currentStudent.email || ''} onChange={e => setCurrentStudent({...currentStudent, email: e.target.value})} required />
               <Input label="Reg Number" value={currentStudent.reg_number || ''} onChange={e => setCurrentStudent({...currentStudent, reg_number: e.target.value})} required />
               <Input label="Program" value={currentStudent.program || ''} onChange={e => setCurrentStudent({...currentStudent, program: e.target.value})} required />
               <div className="grid grid-cols-2 gap-4">
@@ -607,6 +611,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
                     </select>
                  </div>
               </div>
+              {!currentStudent.id && (
+                <Input label="Initial Password" type="password" placeholder="Min 8 characters" value={(currentStudent as any).password || ''} onChange={e => setCurrentStudent({...currentStudent, ...(currentStudent as any), password: e.target.value})} required />
+              )}
               <Button type="submit" className="w-full mt-2" disabled={saving}>{saving ? <Loader2 className="animate-spin" /> : 'Save'}</Button>
             </form>
           </div>
