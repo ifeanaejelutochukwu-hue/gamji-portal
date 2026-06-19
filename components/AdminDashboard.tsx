@@ -484,6 +484,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
                           <th className="px-6 py-3 font-medium">Code</th>
                           <th className="px-6 py-3 font-medium">Title</th>
                           <th className="px-6 py-3 font-medium text-center">Units</th>
+                          <th className="px-6 py-3 font-medium text-center">Level</th>
+                          <th className="px-6 py-3 font-medium">Semester</th>
                           <th className="px-6 py-3 font-medium text-right">Actions</th>
                         </tr>
                       </thead>
@@ -493,6 +495,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
                             <td className="px-6 py-4 font-bold text-nursing-700">{course.code}</td>
                             <td className="px-6 py-4 text-slate-900 font-medium">{course.title}</td>
                             <td className="px-6 py-4 text-center">{course.units}</td>
+                            <td className="px-6 py-4 text-center">{course.level}L</td>
+                            <td className="px-6 py-4 text-slate-600">{course.semester}</td>
                             <td className="px-6 py-4 text-right">
                               <div className="flex justify-end gap-2">
                                 <button onClick={() => { setCurrentCourse(course); setIsCourseModalOpen(true); }} className="p-1 text-slate-400 hover:text-blue-600"><Edit2 className="w-4 h-4" /></button>
@@ -649,13 +653,36 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
               <button onClick={() => setIsCourseModalOpen(false)}><X className="w-5 h-5 text-slate-400" /></button>
             </div>
             <form onSubmit={handleSaveCourse} className="p-6 space-y-4">
-              <Input label="Code" value={currentCourse.code || ''} onChange={e => setCurrentCourse({...currentCourse, code: e.target.value})} required />
-              <Input label="Title" value={currentCourse.title || ''} onChange={e => setCurrentCourse({...currentCourse, title: e.target.value})} required />
+              <Input label="Course Code" placeholder="e.g. GNS 201" value={currentCourse.code || ''} onChange={e => setCurrentCourse({...currentCourse, code: e.target.value})} required />
+              <Input label="Course Title" placeholder="e.g. Foundations of Nursing Practice" value={currentCourse.title || ''} onChange={e => setCurrentCourse({...currentCourse, title: e.target.value})} required />
               <div className="grid grid-cols-2 gap-4">
-                 <Input label="Units" type="number" value={currentCourse.units || 2} onChange={e => setCurrentCourse({...currentCourse, units: parseInt(e.target.value)})} />
-                 <Input label="Level" type="number" value={currentCourse.level || 100} onChange={e => setCurrentCourse({...currentCourse, level: parseInt(e.target.value)})} />
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-slate-700">Level</label>
+                  <select className="flex h-11 w-full rounded-lg border border-slate-200 px-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-nursing-500/20 focus:border-nursing-500"
+                    value={currentCourse.level || 100} onChange={e => setCurrentCourse({...currentCourse, level: parseInt(e.target.value)})}>
+                    <option value={100}>100 Level</option>
+                    <option value={200}>200 Level</option>
+                    <option value={300}>300 Level</option>
+                    <option value={400}>400 Level</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-slate-700">Units</label>
+                  <select className="flex h-11 w-full rounded-lg border border-slate-200 px-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-nursing-500/20 focus:border-nursing-500"
+                    value={currentCourse.units || 3} onChange={e => setCurrentCourse({...currentCourse, units: parseInt(e.target.value)})}>
+                    {[1,2,3,4,5,6].map(u => <option key={u} value={u}>{u} unit{u > 1 ? 's' : ''}</option>)}
+                  </select>
+                </div>
               </div>
-              <Button type="submit" className="w-full mt-2" disabled={saving}>{saving ? <Loader2 className="animate-spin" /> : 'Save'}</Button>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-slate-700">Semester</label>
+                <select className="flex h-11 w-full rounded-lg border border-slate-200 px-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-nursing-500/20 focus:border-nursing-500"
+                  value={currentCourse.semester || '1st'} onChange={e => setCurrentCourse({...currentCourse, semester: e.target.value})}>
+                  <option value="1st">1st Semester</option>
+                  <option value="2nd">2nd Semester</option>
+                </select>
+              </div>
+              <Button type="submit" className="w-full mt-2" disabled={saving}>{saving ? <Loader2 className="animate-spin" /> : 'Save Course'}</Button>
             </form>
           </div>
         </div>
