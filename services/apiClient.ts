@@ -497,6 +497,34 @@ export const api = {
 
   // 2. Student Module
   students: {
+    async register(input: { full_name: string; email: string; password: string; program: string }): Promise<StudentProfile> {
+      const config = getGoBackendConfig();
+      if (config.enabled) {
+        return apiRequest<StudentProfile>('/api/students/register', {
+          method: 'POST',
+          body: JSON.stringify(input),
+        });
+      } else {
+        // Mock: create pending student
+        const list = LocalDatabase.students;
+        const year = new Date().getFullYear();
+        const seq = list.filter(s => s.reg_number.startsWith(`GNS/${year}/`)).length + 1;
+        const newObj: StudentProfile = {
+          id: 'std_' + Math.random().toString(36).substr(2, 6),
+          auth_id: 'usr_' + Math.random().toString(36).substr(2, 6),
+          full_name: input.full_name,
+          reg_number: `GNS/${year}/${String(seq).padStart(4, '0')}`,
+          program: input.program,
+          year_of_study: 1,
+          level: 100,
+          status: 'pending',
+          email: input.email,
+        };
+        LocalDatabase.students = [...list, newObj];
+        return newObj;
+      }
+    },
+
     async getProfile(authId: string): Promise<StudentProfile> {
       const config = getGoBackendConfig();
       if (config.enabled) {

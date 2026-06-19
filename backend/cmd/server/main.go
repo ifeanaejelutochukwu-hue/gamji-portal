@@ -81,6 +81,7 @@ func main() {
 	r.Post("/api/auth/logout", authHandler.Logout)
 	r.Post("/api/auth/forgot-password", authHandler.ForgotPassword)
 	r.Post("/api/auth/reset-password", authHandler.ResetPassword)
+	r.Post("/api/students/register", studentHandler.Register) // public self-registration
 
 	// Protected routes
 	r.Group(func(r chi.Router) {

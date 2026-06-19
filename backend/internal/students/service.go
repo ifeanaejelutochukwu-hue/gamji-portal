@@ -54,6 +54,78 @@ var validStatuses = map[string]bool{
 	"active": true, "graduated": true, "suspended": true, "pending": true,
 }
 
+// validPrograms are the two programs Gamji College offers.
+var validPrograms = map[string]bool{
+	"General Nursing": true,
+	"Basic Midwifery": true,
+}
+
+// SelfRegisterInput is used for student self-registration from the login page.
+type SelfRegisterInput struct {
+	FullName string `json:"full_name"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+	Program  string `json:"program"`
+}
+
+// SelfRegister creates a pending student account with an auto-generated reg number.
+func (s *Service) SelfRegister(ctx context.Context, input SelfRegisterInput) (*StudentProfile, error) {
+	if !validPrograms[input.Program] {
+		return nil, errors.New("program must be General Nursing or Basic Midwifery")
+	}
+	if len(input.Password) < 8 {
+		return nil, errors.New("password must be at least 8 characters")
+	}
+
+	hash, err := auth.HashPassword(input.Password)
+	if err != nil {
+		return nil, fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(ctx)
+
+	var userID string
+	err = tx.QueryRow(ctx,
+		`INSERT INTO users (email, full_name, role, password_hash)
+		 VALUES ($1, $2, 'Student', $3) RETURNING id`,
+		input.Email, input.FullName, hash,
+	).Scan(&userID)
+	if err != nil {
+		if isDuplicateError(err, "users_email_key") {
+			return nil, errors.New("email already registered")
+		}
+		return nil, fmt.Errorf("create user: %w", err)
+	}
+
+	// Auto-generate reg number: GNS/YYYY/XXXX
+	year := time.Now().Year()
+	var lastSeq int
+	_ = tx.QueryRow(ctx,
+		`SELECT COALESCE(MAX(CAST(SPLIT_PART(reg_number, '/', 3) AS INTEGER)), 0)
+		 FROM student_profiles WHERE reg_number LIKE $1`,
+		fmt.Sprintf("GNS/%d/%%", year),
+	).Scan(&lastSeq)
+	regNumber := fmt.Sprintf("GNS/%d/%04d", year, lastSeq+1)
+
+	var p StudentProfile
+	err = tx.QueryRow(ctx,
+		`INSERT INTO student_profiles (auth_id, full_name, reg_number, program, year_of_study, level, status, email)
+		 VALUES ($1, $2, $3, $4, 1, 100, 'pending', $5)
+		 RETURNING id, auth_id, full_name, reg_number, program, year_of_study, level, status, email, created_at, updated_at`,
+		userID, input.FullName, regNumber, input.Program, input.Email,
+	).Scan(&p.ID, &p.AuthID, &p.FullName, &p.RegNumber, &p.Program,
+		&p.YearOfStudy, &p.Level, &p.Status, &p.Email, &p.CreatedAt, &p.UpdatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("create student profile: %w", err)
+	}
+
+	return &p, tx.Commit(ctx)
+}
+
 // Service handles student business logic.
 type Service struct{ db *pgxpool.Pool }
 

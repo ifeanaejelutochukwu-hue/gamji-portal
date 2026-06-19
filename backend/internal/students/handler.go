@@ -21,6 +21,26 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 	_ = json.NewEncoder(w).Encode(v)
 }
 
+// Register handles POST /api/students/register (public — no auth required)
+func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
+	var input SelfRegisterInput
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+		return
+	}
+	profile, err := h.service.SelfRegister(r.Context(), input)
+	if err != nil {
+		switch err.Error() {
+		case "email already registered":
+			writeJSON(w, http.StatusConflict, map[string]string{"error": err.Error()})
+		default:
+			writeJSON(w, http.StatusUnprocessableEntity, map[string]string{"error": err.Error()})
+		}
+		return
+	}
+	writeJSON(w, http.StatusCreated, profile)
+}
+
 // List handles GET /api/students
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	profiles, err := h.service.List(r.Context())
