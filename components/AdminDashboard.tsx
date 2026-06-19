@@ -169,7 +169,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
     e.preventDefault();
     setSaving(true);
     try {
-      const payload = { ...currentStudent };
+      const payload = { ...currentStudent } as any;
       if (!payload.id) {
         const data = await api.students.create(payload);
         setStudentList(prev => [data as Student, ...prev]);
@@ -178,7 +178,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
         setStudentList(prev => prev.map(s => s.id === payload.id ? { ...s, ...payload } as Student : s));
       }
       setIsStudentModalOpen(false);
-    } catch (e) { alert("Error saving student."); } finally { setSaving(false); }
+    } catch (e: any) {
+      alert("Error saving student: " + (e?.message || 'Unknown error'));
+    } finally { setSaving(false); }
+  };
+
+  const handleApproveStudent = async (id: string) => {
+    try {
+      await api.students.update(id, { status: 'active' } as any);
+      setStudentList(prev => prev.map(s => s.id === id ? { ...s, status: 'active' } : s));
+    } catch (err: any) {
+      alert("Failed to approve: " + (err?.message || 'Unknown error'));
+    }
   };
 
   const handleDeleteStudent = async (id: string) => {
@@ -338,8 +349,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {[
                       { label: 'Total Students', value: studentList.length, icon: Users, color: 'blue' },
+                      { label: 'Pending Approval', value: studentList.filter(s => s.status === 'pending').length, icon: Users, color: 'yellow' },
                       { label: 'Staff Members', value: staffList.length, icon: Shield, color: 'purple' },
-                      { label: 'Courses', value: coursesList.length, icon: BookOpen, color: 'orange' },
                       { label: 'Total Revenue', value: formatCurrency(paymentsList.filter(p => p.status === 'paid').reduce((sum, p) => sum + p.amount, 0)), icon: CreditCard, color: 'green' },
                     ].map((stat, idx) => (
                       <div key={idx} className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 hover:shadow-md transition-shadow">
@@ -436,12 +447,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
                             <td className="px-6 py-4 text-slate-700">{student.level}L</td>
                             <td className="px-6 py-4">
                               <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium 
-                                  ${student.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                  ${student.status === 'active' ? 'bg-green-100 text-green-800' : student.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
                                   {student.status}
                               </span>
                             </td>
                             <td className="px-6 py-4 text-right">
-                               <div className="flex justify-end gap-2">
+                               <div className="flex justify-end gap-2 items-center">
+                                {student.status === 'pending' && (
+                                  <button
+                                    onClick={() => handleApproveStudent(student.id)}
+                                    className="px-2 py-1 bg-green-50 text-green-700 border border-green-200 rounded text-xs font-bold hover:bg-green-100 transition"
+                                    title="Approve student"
+                                  >
+                                    Approve
+                                  </button>
+                                )}
                                 <button onClick={() => { setCurrentStudent(student); setIsStudentModalOpen(true); }} className="p-1 text-slate-400 hover:text-blue-600"><Edit2 className="w-4 h-4" /></button>
                                 <button onClick={() => handleDeleteStudent(student.id)} className="p-1 text-slate-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
                               </div>
