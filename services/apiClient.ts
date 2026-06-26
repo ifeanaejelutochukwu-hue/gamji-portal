@@ -908,5 +908,37 @@ export const api = {
         return updated;
       }
     }
+  },
+
+  // 8. Analytics Module
+  analytics: {
+    async getSummary(): Promise<{
+      total_active_students: number;
+      total_staff: number;
+      total_courses: number;
+      pending_admissions: number;
+      total_revenue_paid: number;
+      submitted_results: number;
+    }> {
+      const config = getGoBackendConfig();
+      if (config.enabled) {
+        return apiRequest('/api/analytics/summary');
+      } else {
+        const students = LocalDatabase.students;
+        const staff = LocalDatabase.staff;
+        const courses = LocalDatabase.courses;
+        const admissions = LocalDatabase.admissions;
+        const payments = LocalDatabase.payments;
+        const results = LocalDatabase.results;
+        return {
+          total_active_students: students.filter(s => s.status === 'active').length,
+          total_staff: staff.length,
+          total_courses: courses.length,
+          pending_admissions: admissions.filter(a => a.status === 'pending').length,
+          total_revenue_paid: payments.filter(p => p.status === 'paid').reduce((sum, p) => sum + p.amount, 0),
+          submitted_results: results.filter(r => r.status === 'submitted').length,
+        };
+      }
+    }
   }
 };

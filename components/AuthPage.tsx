@@ -5,18 +5,20 @@ import { Button } from './Button';
 import { Input } from './Input';
 import {
   Mail, Lock, Eye, EyeOff, AlertCircle, Activity, Heart,
-  ArrowRight, Settings, Check, User, BookOpen, CheckCircle
+  ArrowRight, Settings, Check, User, BookOpen, CheckCircle, ArrowLeft
 } from 'lucide-react';
 import { UserRole } from '../App';
 
 interface AuthPageProps {
   onLogin: (role: UserRole, userId: string) => void;
+  mode?: 'student' | 'staff';
+  onBack?: () => void;
 }
 
 const PROGRAMS = ['General Nursing', 'Basic Midwifery'];
 
-export const AuthPage: React.FC<AuthPageProps> = ({ onLogin }) => {
-  const [tab, setTab] = useState<'login' | 'register'>('login');
+export const AuthPage: React.FC<AuthPageProps> = ({ onLogin, mode = 'student', onBack }) => {
+  const [tab, setTab] = useState<'login' | 'register'>(mode === 'staff' ? 'login' : 'login');
 
   // Login state
   const [email, setEmail] = useState('');
@@ -137,7 +139,9 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLogin }) => {
         <div className="relative z-10 max-w-lg">
           <h2 className="text-4xl font-bold leading-tight mb-6">Excellence in Nursing Education & Practice</h2>
           <p className="text-nursing-100 text-lg leading-relaxed mb-8">
-            Welcome to the Gamji College of Nursing Sciences Portal. Securely access your academic resources, results, and administrative tools.
+            {mode === 'staff'
+              ? 'Staff Portal — Manage academic records, students, and administrative tasks securely.'
+              : 'Welcome to the Gamji College of Nursing Sciences Portal. Securely access your academic resources, results, and administrative tools.'}
           </p>
           <div className="flex gap-6 text-sm font-medium text-nursing-200">
             <div className="flex items-center gap-3">
@@ -160,7 +164,16 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLogin }) => {
         <div className="w-full max-w-md mx-auto space-y-6">
           <div className="lg:hidden text-center"><Logo className="mx-auto" /></div>
 
-          {/* Tab switcher */}
+          {/* Back to website button */}
+          {onBack && (
+            <button onClick={onBack}
+              className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-nursing-600 transition-colors">
+              <ArrowLeft className="w-4 h-4" /> Back to College Website
+            </button>
+          )}
+
+          {/* Tab switcher — only show for student mode */}
+          {mode === 'student' && (
           <div className="flex bg-slate-100 rounded-xl p-1">
             <button
               onClick={() => { setTab('login'); setError(null); }}
@@ -179,13 +192,24 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLogin }) => {
               New Student Registration
             </button>
           </div>
+          )}
+          {mode === 'staff' && (
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight text-slate-900">Staff Sign In</h2>
+              <p className="mt-1 text-sm text-slate-500">This portal is for authorised staff only.</p>
+            </div>
+          )}
 
           {/* ── LOGIN FORM ── */}
           {tab === 'login' && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-2xl font-bold tracking-tight text-slate-900">Welcome back</h2>
-                <p className="mt-1 text-sm text-slate-500">Sign in to access your dashboard.</p>
+                <h2 className="text-2xl font-bold tracking-tight text-slate-900">
+                  {mode === 'staff' ? 'Staff Sign In' : 'Welcome back'}
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  {mode === 'staff' ? 'Enter your staff credentials to access your dashboard.' : 'Sign in to access your dashboard.'}
+                </p>
               </div>
 
               <form className="space-y-5" onSubmit={handleLogin}>

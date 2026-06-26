@@ -25,11 +25,16 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Home',     tab: 'overview',  icon: Home,        roles: ['Student', 'Lecturer', 'Registrar', 'Bursar', 'Admin', 'Provost'] },
-  { label: 'Courses',  tab: 'courses',   icon: BookOpen,    roles: ['Student', 'Lecturer', 'Registrar'] },
-  { label: 'Results',  tab: 'results',   icon: FileBarChart, roles: ['Student', 'Lecturer', 'Registrar'] },
-  { label: 'Payments', tab: 'payments',  icon: CreditCard,  roles: ['Student', 'Bursar'] },
-  { label: 'Profile',  tab: 'profile',   icon: User,        roles: ['Student', 'Lecturer', 'Registrar', 'Bursar', 'Admin', 'Provost'] },
+  { label: 'Home',       tab: 'overview',    icon: Home,         roles: ['Student', 'Lecturer', 'Registrar', 'Bursar', 'Admin', 'Provost'] },
+  { label: 'Courses',    tab: 'courses',     icon: BookOpen,     roles: ['Student', 'Lecturer', 'Registrar', 'Admin'] },
+  { label: 'Results',    tab: 'results',     icon: FileBarChart, roles: ['Student', 'Lecturer', 'Registrar'] },
+  { label: 'Students',   tab: 'students',    icon: Home,         roles: ['Admin', 'Provost'] },
+  { label: 'Staff',      tab: 'staff',       icon: Home,         roles: ['Admin'] },
+  { label: 'Payments',   tab: 'payments',    icon: CreditCard,   roles: ['Student', 'Bursar', 'Admin'] },
+  { label: 'Admissions', tab: 'admissions',  icon: FileBarChart, roles: ['Provost'] },
+  { label: 'Finance',    tab: 'finance',     icon: CreditCard,   roles: ['Provost'] },
+  { label: 'Reports',    tab: 'reports',     icon: FileBarChart, roles: ['Admin'] },
+  { label: 'Profile',    tab: 'profile',     icon: User,         roles: ['Student', 'Lecturer', 'Registrar', 'Bursar', 'Admin', 'Provost'] },
 ];
 
 const getRoleBadgeColor = (r: string) => {

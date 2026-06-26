@@ -24,7 +24,8 @@ import {
   AlertCircle,
   Loader2,
   CheckCircle,
-  Clock
+  Clock,
+  User
 } from 'lucide-react';
 import { Button } from './Button';
 import { Input } from './Input';
@@ -32,10 +33,9 @@ import { Input } from './Input';
 interface AdminDashboardProps {
   session: Session;
   onLogout: () => void;
-  role?: 'Admin' | 'Provost';
 }
 
-type TabId = 'overview' | 'staff' | 'students' | 'courses' | 'payments' | 'reports';
+type TabId = 'overview' | 'staff' | 'students' | 'courses' | 'payments' | 'reports' | 'profile';
 
 interface StaffMember {
   id: string;
@@ -74,7 +74,7 @@ interface Payment {
   status: 'paid' | 'pending';
 }
 
-export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogout, role = 'Admin' }) => {
+export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogout }) => {
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [loading, setLoading] = useState(true);
 
@@ -261,10 +261,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
       <Navbar 
-        userEmail={session.user.email || (role === 'Provost' ? 'provost@gamji.edu.ng' : 'admin@gamji.edu.ng')} 
-        userRole={role}
-        userName={role === 'Provost' ? "College Provost" : "System Administrator"}
+        userEmail={session.user.email}
+        userRole="Admin"
+        userName={session.user.full_name}
         onLogout={onLogout}
+        activeTab={activeTab}
+        onTabChange={t => setActiveTab(t as TabId)}
       />
 
       <div className="flex flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 gap-8">
@@ -272,7 +274,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
         {/* Sidebar Navigation */}
         <div className={`w-64 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex-shrink-0 h-fit hidden md:block`}>
           <div className="p-4 border-b border-slate-100 bg-slate-50/50">
-             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">{role === 'Provost' ? 'Provost' : 'Admin'} Menu</p>
+             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Admin Menu</p>
           </div>
           <nav className="flex flex-col py-2">
             <SidebarItem id="overview" icon={LayoutDashboard} label="Overview" />
@@ -281,6 +283,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
             <SidebarItem id="courses" icon={BookOpen} label="Courses" />
             <SidebarItem id="payments" icon={CreditCard} label="Payments" />
             <SidebarItem id="reports" icon={FileText} label="Reports" />
+            <SidebarItem id="profile" icon={BarChart3} label="My Profile" />
           </nav>
           
           <div className="p-4 mt-4 border-t border-slate-100">
@@ -295,7 +298,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
 
         {/* Mobile Nav Helper */}
         <div className="md:hidden w-full mb-4 overflow-x-auto flex gap-2 pb-2">
-           {['overview', 'staff', 'students', 'courses', 'payments', 'reports'].map((tab) => (
+           {['overview', 'staff', 'students', 'courses', 'payments', 'reports', 'profile'].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab as TabId)}
@@ -560,18 +563,61 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
               {/* VIEW: REPORTS */}
               {activeTab === 'reports' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in-up">
-                    {['Financial Summary', 'Student Enrollment Report'].map((report, i) => (
-                      <div key={i} className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between cursor-pointer group">
+                    {[
+                      { title: 'Student Enrollment Report', desc: 'All students with reg numbers and status' },
+                      { title: 'Financial Summary', desc: 'Total revenue, pending payments' },
+                      { title: 'Staff Directory', desc: 'All staff members and roles' },
+                      { title: 'Course Register', desc: 'All courses by level and semester' },
+                    ].map((report, i) => (
+                      <div key={i} onClick={() => window.print()}
+                        className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between cursor-pointer hover:shadow-md hover:border-nursing-200 transition group">
                           <div className="flex items-center gap-4">
-                            <div className="p-3 bg-slate-50 rounded-lg"><FileText className="w-6 h-6 text-slate-500" /></div>
+                            <div className="p-3 bg-slate-50 rounded-lg group-hover:bg-nursing-50 transition"><FileText className="w-6 h-6 text-slate-500 group-hover:text-nursing-600" /></div>
                             <div>
-                                <h3 className="font-semibold text-slate-900">{report}</h3>
-                                <p className="text-xs text-slate-400">PDF Available</p>
+                                <h3 className="font-semibold text-slate-900">{report.title}</h3>
+                                <p className="text-xs text-slate-400">{report.desc}</p>
                             </div>
                           </div>
-                          <Download className="w-5 h-5 text-slate-400" />
+                          <Download className="w-5 h-5 text-slate-400 group-hover:text-nursing-600 transition" />
                       </div>
                     ))}
+                </div>
+              )}
+
+              {/* VIEW: PROFILE */}
+              {activeTab === 'profile' && (
+                <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden max-w-lg animate-fade-in-up">
+                  <div className="p-5 border-b border-slate-100 bg-slate-50">
+                    <h3 className="font-bold text-slate-900">My Profile</h3>
+                  </div>
+                  <div className="p-6 space-y-5">
+                    <div className="flex items-center gap-4 pb-5 border-b border-slate-100">
+                      <div className="w-16 h-16 rounded-full bg-nursing-100 flex items-center justify-center text-2xl font-bold text-nursing-700">
+                        {session.user.full_name.charAt(0)}
+                      </div>
+                      <div>
+                        <h2 className="text-lg font-bold text-slate-900">{session.user.full_name}</h2>
+                        <p className="text-slate-500 text-sm">{session.user.email}</p>
+                        <span className="mt-1 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">ADMIN</span>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {[
+                        { label: 'Full Name', value: session.user.full_name },
+                        { label: 'Email', value: session.user.email },
+                        { label: 'Role', value: 'System Administrator' },
+                        { label: 'Institution', value: 'Gamji College of Nursing Sciences' },
+                      ].map((f, i) => (
+                        <div key={i} className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                          <p className="text-xs text-slate-400 uppercase tracking-wide font-medium">{f.label}</p>
+                          <p className="font-semibold text-slate-800 mt-1">{f.value}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="pt-3 border-t border-slate-100">
+                      <p className="text-xs text-slate-400 text-center">Use "Forgot Password" on the login page to change your password.</p>
+                    </div>
+                  </div>
                 </div>
               )}
             </>
@@ -585,27 +631,44 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
       {/* Staff Modal */}
       {isStaffModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-              <h3 className="font-bold text-lg text-slate-900">{currentStaff.id ? 'Edit Staff' : 'Add Staff'}</h3>
+              <h3 className="font-bold text-lg text-slate-900">{currentStaff.id ? 'Edit Staff Member' : 'Add New Staff Member'}</h3>
               <button onClick={() => setIsStaffModalOpen(false)}><X className="w-5 h-5 text-slate-400" /></button>
             </div>
             <form onSubmit={handleSaveStaff} className="p-6 space-y-4">
-              <Input label="Full Name" value={currentStaff.full_name || ''} onChange={e => setCurrentStaff({...currentStaff, full_name: e.target.value})} required />
-              <Input label="Email" type="email" value={currentStaff.email || ''} onChange={e => setCurrentStaff({...currentStaff, email: e.target.value})} required />
-              <div className="space-y-2">
-                 <label className="text-sm font-medium text-slate-700">Role</label>
-                 <select className="flex h-11 w-full rounded-lg border border-slate-200 px-3" value={currentStaff.role || 'Lecturer'} onChange={e => setCurrentStaff({...currentStaff, role: e.target.value as any})}>
-                   <option value="Admin">Admin</option>
-                   <option value="Lecturer">Lecturer</option>
-                   <option value="Bursar">Bursar</option>
-                   <option value="Registrar">Registrar</option>
-                 </select>
+              <Input label="Full Name" placeholder="e.g. Dr. Aminu Usman" value={currentStaff.full_name || ''} onChange={e => setCurrentStaff({...currentStaff, full_name: e.target.value})} required />
+              <Input label="Email Address" type="email" placeholder="e.g. aminu.usman@gamji.edu.ng" value={currentStaff.email || ''} onChange={e => setCurrentStaff({...currentStaff, email: e.target.value})} required />
+              <Input label="Phone Number" placeholder="e.g. +234 803 123 4567" value={currentStaff.phone || ''} onChange={e => setCurrentStaff({...currentStaff, phone: e.target.value} as any)} />
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-slate-700">Role</label>
+                <select className="flex h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-nursing-500/20 focus:border-nursing-500"
+                  value={currentStaff.role || 'Lecturer'} onChange={e => setCurrentStaff({...currentStaff, role: e.target.value as any})}>
+                  <option value="Provost">Provost — Head of the college, executive oversight</option>
+                  <option value="Admin">Admin — System administrator, full access</option>
+                  <option value="Registrar">Registrar — Manages admissions and student records</option>
+                  <option value="Bursar">Bursar — Manages payments and financial records</option>
+                  <option value="Lecturer">Lecturer — Teaches courses and uploads results</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-slate-700">Status</label>
+                <select className="flex h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-nursing-500/20 focus:border-nursing-500"
+                  value={currentStaff.status || 'active'} onChange={e => setCurrentStaff({...currentStaff, status: e.target.value as any})}>
+                  <option value="active">Active — Currently working</option>
+                  <option value="leave">On Leave — Temporarily absent</option>
+                </select>
               </div>
               {!currentStaff.id && (
-                <Input label="Initial Password" type="password" placeholder="Min 8 characters" value={(currentStaff as any).password || ''} onChange={e => setCurrentStaff({...currentStaff, ...(currentStaff as any), password: e.target.value})} required />
+                <div>
+                  <Input label="Initial Password" type="password" placeholder="Min 8 characters — staff will change on first login"
+                    value={(currentStaff as any).password || ''} onChange={e => setCurrentStaff({...currentStaff, ...(currentStaff as any), password: e.target.value})} required />
+                  <p className="text-xs text-slate-400 mt-1">Share this password with the staff member privately. They can reset it using "Forgot Password".</p>
+                </div>
               )}
-              <Button type="submit" className="w-full mt-2" disabled={saving}>{saving ? <Loader2 className="animate-spin" /> : 'Save'}</Button>
+              <Button type="submit" className="w-full bg-nursing-600 hover:bg-nursing-700 mt-2" disabled={saving}>
+                {saving ? <Loader2 className="animate-spin w-4 h-4" /> : (currentStaff.id ? 'Save Changes' : 'Create Staff Account')}
+              </Button>
             </form>
           </div>
         </div>
@@ -614,31 +677,55 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
       {/* Student Modal */}
       {isStudentModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-              <h3 className="font-bold text-lg text-slate-900">{currentStudent.id ? 'Edit Student' : 'Add Student'}</h3>
+              <h3 className="font-bold text-lg text-slate-900">{currentStudent.id ? 'Edit Student' : 'Add New Student'}</h3>
               <button onClick={() => setIsStudentModalOpen(false)}><X className="w-5 h-5 text-slate-400" /></button>
             </div>
             <form onSubmit={handleSaveStudent} className="p-6 space-y-4">
-              <Input label="Full Name" value={currentStudent.full_name || ''} onChange={e => setCurrentStudent({...currentStudent, full_name: e.target.value})} required />
-              <Input label="Email" type="email" value={currentStudent.email || ''} onChange={e => setCurrentStudent({...currentStudent, email: e.target.value})} required />
-              <Input label="Reg Number" value={currentStudent.reg_number || ''} onChange={e => setCurrentStudent({...currentStudent, reg_number: e.target.value})} required />
-              <Input label="Program" value={currentStudent.program || ''} onChange={e => setCurrentStudent({...currentStudent, program: e.target.value})} required />
+              <Input label="Full Name" placeholder="e.g. Hadiza Bello Shagari" value={currentStudent.full_name || ''} onChange={e => setCurrentStudent({...currentStudent, full_name: e.target.value})} required />
+              <Input label="Email Address" type="email" placeholder="e.g. hadiza@gmail.com" value={currentStudent.email || ''} onChange={e => setCurrentStudent({...currentStudent, email: e.target.value})} required />
+              <Input label="Registration Number" placeholder="e.g. GNS/2026/0001" value={currentStudent.reg_number || ''} onChange={e => setCurrentStudent({...currentStudent, reg_number: e.target.value})} required />
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-slate-700">Programme</label>
+                <select className="flex h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-nursing-500/20 focus:border-nursing-500"
+                  value={currentStudent.program || ''} onChange={e => setCurrentStudent({...currentStudent, program: e.target.value})} required>
+                  <option value="">-- Select Programme --</option>
+                  <option value="General Nursing">General Nursing (RN) — 3 Years</option>
+                  <option value="Basic Midwifery">Basic Midwifery (RM) — 2 Years</option>
+                </select>
+              </div>
               <div className="grid grid-cols-2 gap-4">
-                 <Input label="Level" type="number" value={currentStudent.level || 100} onChange={e => setCurrentStudent({...currentStudent, level: parseInt(e.target.value)})} />
-                 <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700">Status</label>
-                    <select className="flex h-11 w-full rounded-lg border border-slate-200 px-3" value={currentStudent.status || 'active'} onChange={e => setCurrentStudent({...currentStudent, status: e.target.value as any})}>
-                       <option value="active">Active</option>
-                       <option value="suspended">Suspended</option>
-                       <option value="graduated">Graduated</option>
-                    </select>
-                 </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-slate-700">Level</label>
+                  <select className="flex h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-nursing-500/20 focus:border-nursing-500"
+                    value={currentStudent.level || 100} onChange={e => setCurrentStudent({...currentStudent, level: parseInt(e.target.value)})}>
+                    <option value={100}>100 Level (Year 1)</option>
+                    <option value={200}>200 Level (Year 2)</option>
+                    <option value={300}>300 Level (Year 3)</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-slate-700">Status</label>
+                  <select className="flex h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-nursing-500/20 focus:border-nursing-500"
+                    value={currentStudent.status || 'active'} onChange={e => setCurrentStudent({...currentStudent, status: e.target.value as any})}>
+                    <option value="active">Active — Enrolled</option>
+                    <option value="pending">Pending — Awaiting approval</option>
+                    <option value="suspended">Suspended</option>
+                    <option value="graduated">Graduated</option>
+                  </select>
+                </div>
               </div>
               {!currentStudent.id && (
-                <Input label="Initial Password" type="password" placeholder="Min 8 characters" value={(currentStudent as any).password || ''} onChange={e => setCurrentStudent({...currentStudent, ...(currentStudent as any), password: e.target.value})} required />
+                <div>
+                  <Input label="Initial Password" type="password" placeholder="Min 8 characters"
+                    value={(currentStudent as any).password || ''} onChange={e => setCurrentStudent({...currentStudent, ...(currentStudent as any), password: e.target.value})} required />
+                  <p className="text-xs text-slate-400 mt-1">Student can reset this via "Forgot Password" on the login page.</p>
+                </div>
               )}
-              <Button type="submit" className="w-full mt-2" disabled={saving}>{saving ? <Loader2 className="animate-spin" /> : 'Save'}</Button>
+              <Button type="submit" className="w-full bg-nursing-600 hover:bg-nursing-700 mt-2" disabled={saving}>
+                {saving ? <Loader2 className="animate-spin w-4 h-4" /> : (currentStudent.id ? 'Save Changes' : 'Create Student Account')}
+              </Button>
             </form>
           </div>
         </div>
