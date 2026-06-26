@@ -4,6 +4,7 @@ import type { Session } from "./services/apiClient";
 
 import { SchoolWebsite } from "./components/SchoolWebsite";
 import { AuthPage } from "./components/AuthPage";
+import { ResetPasswordPage } from "./components/ResetPasswordPage";
 import { StudentDashboard } from "./components/StudentDashboard";
 import { LecturerDashboard } from "./components/LecturerDashboard";
 import { AdminDashboard } from "./components/AdminDashboard";
@@ -14,16 +15,27 @@ import { BursarDashboard } from "./components/BursarDashboard";
 export type UserRole = 'Student' | 'Lecturer' | 'Registrar' | 'Bursar' | 'Admin' | 'Provost';
 
 // Which screen to show
-type Screen = 'website' | 'student-auth' | 'staff-auth' | 'dashboard';
+type Screen = 'website' | 'student-auth' | 'staff-auth' | 'dashboard' | 'reset-password';
 
 // Staff roles that use the staff login path
 const STAFF_ROLES: UserRole[] = ['Lecturer', 'Registrar', 'Bursar', 'Admin', 'Provost'];
+
+// Extract reset token from URL if present
+function getResetToken(): string | null {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('token');
+}
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
-  const [screen, setScreen] = useState<Screen>('website');
+  // Check URL for password reset token on initial load
+  const [screen, setScreen] = useState<Screen>(() => {
+    const token = getResetToken();
+    if (token) return 'reset-password';
+    return 'website';
+  });
 
   useEffect(() => {
     // Check for existing session
@@ -104,6 +116,21 @@ export default function App() {
         onLogin={handleLogin}
         mode={screen === 'staff-auth' ? 'staff' : 'student'}
         onBack={() => setScreen('website')}
+      />
+    );
+  }
+
+  // Password reset page
+  if (screen === 'reset-password') {
+    const token = getResetToken() || '';
+    return (
+      <ResetPasswordPage
+        token={token}
+        onBack={() => {
+          // Clear token from URL and go to login
+          window.history.replaceState({}, '', window.location.pathname);
+          setScreen('website');
+        }}
       />
     );
   }

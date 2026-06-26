@@ -102,6 +102,25 @@ func (s *Service) Verify(ctx context.Context, id, status string) (*Payment, erro
 	return &p, nil
 }
 
+// Create records a new payment for a student.
+func (s *Service) Create(ctx context.Context, studentID string, amount float64, purpose, status string) (*Payment, error) {
+	if !validStatuses[status] {
+		status = "pending"
+	}
+	var p Payment
+	err := s.db.QueryRow(ctx,
+		`INSERT INTO payments (student_id, amount, purpose, status)
+		 VALUES ($1, $2, $3, $4)
+		 RETURNING id, student_id, amount, purpose, status, reference, created_at, updated_at`,
+		studentID, amount, purpose, status,
+	).Scan(&p.ID, &p.StudentID, &p.Amount, &p.Purpose, &p.Status,
+		&p.Reference, &p.CreatedAt, &p.UpdatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("create payment: %w", err)
+	}
+	return &p, nil
+}
+
 func scanPaymentsWithStudent(rows pgx.Rows) ([]Payment, error) {
 	var payments []Payment
 	for rows.Next() {

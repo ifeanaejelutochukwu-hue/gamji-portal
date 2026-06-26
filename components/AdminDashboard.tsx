@@ -35,7 +35,7 @@ interface AdminDashboardProps {
   onLogout: () => void;
 }
 
-type TabId = 'overview' | 'staff' | 'students' | 'courses' | 'payments' | 'reports' | 'profile';
+type TabId = 'overview' | 'staff' | 'students' | 'courses' | 'payments' | 'reports' | 'import' | 'profile';
 
 interface StaffMember {
   id: string;
@@ -95,6 +95,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
   const [currentStudent, setCurrentStudent] = useState<Partial<Student>>({});
 
   const [saving, setSaving] = useState(false);
+
+  // Bulk import state
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importLoading, setImportLoading] = useState(false);
+  const [importResult, setImportResult] = useState<{total:number;success:number;failed:number;errors?:string[]}|null>(null);
+
+  // Search state
+  const [studentSearch, setStudentSearch] = useState('');
+  const [staffSearch, setStaffSearch] = useState('');
 
   // --- Data Fetching ---
   useEffect(() => {
@@ -240,6 +249,37 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
     }
   };
 
+  const handleBulkImport = async () => {
+    if (!importFile) { alert('Please select a CSV file first.'); return; }
+    setImportLoading(true);
+    setImportResult(null);
+    try {
+      const result = await api.students.bulkImport(importFile);
+      setImportResult(result);
+      // Refresh student list
+      const updated = await api.students.list();
+      if (updated) setStudentList(updated as any);
+    } catch (err: any) {
+      alert('Import failed: ' + err.message);
+    } finally {
+      setImportLoading(false);
+    }
+  };
+
+  const filteredStudents = studentList.filter(s =>
+    !studentSearch ||
+    s.full_name.toLowerCase().includes(studentSearch.toLowerCase()) ||
+    s.reg_number.toLowerCase().includes(studentSearch.toLowerCase()) ||
+    s.email.toLowerCase().includes(studentSearch.toLowerCase())
+  );
+
+  const filteredStaff = staffList.filter(s =>
+    !staffSearch ||
+    s.full_name.toLowerCase().includes(staffSearch.toLowerCase()) ||
+    s.email.toLowerCase().includes(staffSearch.toLowerCase()) ||
+    s.role.toLowerCase().includes(staffSearch.toLowerCase())
+  );
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(amount);
   };
@@ -283,6 +323,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
             <SidebarItem id="courses" icon={BookOpen} label="Courses" />
             <SidebarItem id="payments" icon={CreditCard} label="Payments" />
             <SidebarItem id="reports" icon={FileText} label="Reports" />
+            <SidebarItem id="import" icon={Download} label="Bulk Import" />
             <SidebarItem id="profile" icon={BarChart3} label="My Profile" />
           </nav>
           
@@ -298,7 +339,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
 
         {/* Mobile Nav Helper */}
         <div className="md:hidden w-full mb-4 overflow-x-auto flex gap-2 pb-2">
-           {['overview', 'staff', 'students', 'courses', 'payments', 'reports', 'profile'].map((tab) => (
+           {['overview', 'staff', 'students', 'courses', 'payments', 'reports', 'import', 'profile'].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab as TabId)}
@@ -393,6 +434,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
               {/* VIEW: STAFF */}
               {activeTab === 'staff' && (
                 <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden animate-fade-in-up">
+                  <div className="p-4 border-b border-slate-100 bg-slate-50 flex flex-col sm:flex-row gap-3">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                      <input type="text" placeholder="Search by name, email or role..."
+                        value={staffSearch} onChange={e => setStaffSearch(e.target.value)}
+                        className="pl-9 h-9 w-full rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-nursing-500/20 focus:border-nursing-500" />
+                    </div>
+                    <span className="text-xs text-slate-400 self-center">{filteredStaff.length} of {staffList.length} staff</span>
+                  </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left">
                       <thead className="bg-slate-50 text-slate-500 uppercase text-xs">
@@ -405,7 +455,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {staffList.map((staff) => (
+                        {filteredStaff.map((staff) => (
                           <tr key={staff.id} className="hover:bg-slate-50">
                             <td className="px-6 py-4 font-semibold text-slate-900">{staff.full_name}</td>
                             <td className="px-6 py-4"><span className="bg-slate-100 px-2 py-0.5 rounded text-xs">{staff.role}</span></td>
@@ -428,6 +478,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
               {/* VIEW: STUDENTS */}
               {activeTab === 'students' && (
                 <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden animate-fade-in-up">
+                  <div className="p-4 border-b border-slate-100 bg-slate-50 flex flex-col sm:flex-row gap-3">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                      <input type="text" placeholder="Search by name, reg number or email..."
+                        value={studentSearch} onChange={e => setStudentSearch(e.target.value)}
+                        className="pl-9 h-9 w-full rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-nursing-500/20 focus:border-nursing-500" />
+                    </div>
+                    <span className="text-xs text-slate-400 self-center">{filteredStudents.length} of {studentList.length} students</span>
+                  </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left">
                       <thead className="bg-slate-50 text-slate-500 uppercase text-xs">
@@ -440,7 +499,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {studentList.map((student) => (
+                        {filteredStudents.map((student) => (
                           <tr key={student.id} className="hover:bg-slate-50">
                             <td className="px-6 py-4">
                               <div className="font-semibold text-slate-900">{student.full_name}</div>
@@ -581,6 +640,83 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ session, onLogou
                           <Download className="w-5 h-5 text-slate-400 group-hover:text-nursing-600 transition" />
                       </div>
                     ))}
+                </div>
+              )}
+
+              {/* VIEW: IMPORT */}
+              {activeTab === 'import' && (
+                <div className="space-y-6 animate-fade-in-up">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Students Import */}
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 space-y-4">
+                      <div>
+                        <h3 className="font-bold text-slate-900 flex items-center gap-2">
+                          <GraduationCap className="w-5 h-5 text-nursing-600" /> Bulk Import Students
+                        </h3>
+                        <p className="text-sm text-slate-500 mt-1">Upload a CSV file to import historical student records in bulk.</p>
+                      </div>
+                      <div className="p-3 bg-blue-50 rounded-lg border border-blue-100 text-xs text-blue-700 space-y-1">
+                        <p className="font-bold">CSV must have these columns:</p>
+                        <p>full_name, email, reg_number, program, year_of_study, level, status, password</p>
+                        <p className="text-blue-500">For graduated students, set status=graduated. Password defaults to "changeme123" if empty.</p>
+                      </div>
+                      <Button variant="outline" className="w-full gap-2" onClick={() => api.students.downloadImportTemplate()}>
+                        <Download className="w-4 h-4" /> Download Template CSV
+                      </Button>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1.5">Select CSV File</label>
+                        <input type="file" accept=".csv"
+                          onChange={e => { setImportFile(e.target.files?.[0] || null); setImportResult(null); }}
+                          className="block w-full text-sm text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border file:border-slate-200 file:text-xs file:font-medium file:bg-slate-50 hover:file:bg-slate-100 cursor-pointer" />
+                      </div>
+                      {importFile && (
+                        <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs text-slate-600">
+                          Selected: <strong>{importFile.name}</strong> ({(importFile.size / 1024).toFixed(1)} KB)
+                        </div>
+                      )}
+                      <Button className="w-full bg-nursing-600 hover:bg-nursing-700" onClick={handleBulkImport} disabled={!importFile || importLoading}>
+                        {importLoading ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Importing...</> : 'Import Students'}
+                      </Button>
+                      {importResult && (
+                        <div className={`p-4 rounded-lg border ${importResult.failed === 0 ? 'bg-green-50 border-green-100' : 'bg-yellow-50 border-yellow-100'}`}>
+                          <p className="font-bold text-sm mb-2">{importResult.failed === 0 ? '✓ Import Complete' : '⚠ Import Complete with Errors'}</p>
+                          <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                            <div className="bg-white rounded p-2 border"><p className="font-bold text-slate-900">{importResult.total}</p><p className="text-slate-500">Total</p></div>
+                            <div className="bg-white rounded p-2 border border-green-200"><p className="font-bold text-green-700">{importResult.success}</p><p className="text-green-600">Success</p></div>
+                            <div className="bg-white rounded p-2 border border-red-200"><p className="font-bold text-red-700">{importResult.failed}</p><p className="text-red-600">Failed</p></div>
+                          </div>
+                          {importResult.errors && importResult.errors.length > 0 && (
+                            <div className="mt-3 max-h-32 overflow-y-auto space-y-1">
+                              {importResult.errors.map((err, i) => (
+                                <p key={i} className="text-xs text-red-700 bg-red-50 px-2 py-1 rounded">{err}</p>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Instructions card */}
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 space-y-4">
+                      <h3 className="font-bold text-slate-900">How to Import Existing Records</h3>
+                      <div className="space-y-4 text-sm text-slate-600">
+                        {[
+                          { step: '1', title: 'Download the template', desc: 'Click "Download Template CSV" to get a pre-formatted spreadsheet with the correct column headers and sample data.' },
+                          { step: '2', title: 'Fill in your data', desc: 'Open the CSV in Excel or Google Sheets. Fill in one student per row. For graduated students, set status to "graduated".' },
+                          { step: '3', title: 'Save as CSV', desc: 'Save the file as CSV (Comma Separated Values) — not Excel format (.xlsx).' },
+                          { step: '4', title: 'Upload and import', desc: 'Select your CSV file and click Import. The system will create accounts for each student and show you any errors.' },
+                        ].map(({ step, title, desc }) => (
+                          <div key={step} className="flex gap-3">
+                            <div className="w-6 h-6 rounded-full bg-nursing-100 text-nursing-700 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">{step}</div>
+                            <div><p className="font-medium text-slate-800">{title}</p><p className="text-slate-500 text-xs mt-0.5">{desc}</p></div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs text-slate-500">
+                        <strong>Note:</strong> Duplicate emails are automatically skipped. Import is safe to run multiple times — it won't create duplicates.
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
 

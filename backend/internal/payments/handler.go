@@ -9,7 +9,6 @@ import (
 
 // Handler holds payment HTTP handlers.
 type Handler struct{ service *Service }
-
 // NewHandler creates a new payments Handler.
 func NewHandler(service *Service) *Handler { return &Handler{service: service} }
 
@@ -39,6 +38,29 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, payments)
+}
+
+// Create handles POST /api/payments (Bursar/Admin records a payment)
+func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		StudentID string  `json:"student_id"`
+		Amount    float64 `json:"amount"`
+		Purpose   string  `json:"purpose"`
+		Status    string  `json:"status"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+		return
+	}
+	if req.Status == "" {
+		req.Status = "pending"
+	}
+	payment, err := h.service.Create(r.Context(), req.StudentID, req.Amount, req.Purpose, req.Status)
+	if err != nil {
+		writeJSON(w, http.StatusUnprocessableEntity, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusCreated, payment)
 }
 
 // Verify handles PUT /api/payments/:id/verify

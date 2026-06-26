@@ -492,13 +492,25 @@ export const api = {
 
     async getSession(): Promise<Session | null> {
       return getStorageItem<Session | null>('session', null);
+    },
+
+    async resetPassword(token: string, password: string): Promise<void> {
+      const config = getGoBackendConfig();
+      if (config.enabled) {
+        await apiRequest('/api/auth/reset-password', {
+          method: 'POST',
+          body: JSON.stringify({ token, password }),
+        });
+      } else {
+        // Mock: always succeed in dev
+        console.log('Mock password reset for token:', token);
+      }
     }
   },
 
   // 2. Student Module
   students: {
-    async register(input: { full_name: string; email: string; password: string; program: string }): Promise<StudentProfile> {
-      const config = getGoBackendConfig();
+    async register(input: { full_name: string; email: string; password: string; program: string }): Promise<StudentProfile> {      const config = getGoBackendConfig();
       if (config.enabled) {
         return apiRequest<StudentProfile>('/api/students/register', {
           method: 'POST',
@@ -522,6 +534,46 @@ export const api = {
         };
         LocalDatabase.students = [...list, newObj];
         return newObj;
+      }
+    },
+
+    async bulkImport(file: File): Promise<{ total: number; success: number; failed: number; errors?: string[] }> {
+      const config = getGoBackendConfig();
+      if (config.enabled) {
+        const formData = new FormData();
+        formData.append('file', file);
+        const session = getStorageItem<Session | null>('session', null);
+        const response = await fetch(`${config.url.replace(/\/$/, '')}/api/students/bulk-import`, {
+          method: 'POST',
+          headers: session?.token ? { 'Authorization': `Bearer ${session.token}` } : {},
+          body: formData,
+        });
+        if (!response.ok) throw new Error(await response.text());
+        return response.json();
+      } else {
+        return { total: 0, success: 0, failed: 0, errors: ['Bulk import requires the Go backend to be connected.'] };
+      }
+    },
+
+    async downloadImportTemplate(): Promise<void> {
+      const config = getGoBackendConfig();
+      if (config.enabled) {
+        const session = getStorageItem<Session | null>('session', null);
+        const response = await fetch(`${config.url.replace(/\/$/, '')}/api/students/bulk-import/template`, {
+          headers: session?.token ? { 'Authorization': `Bearer ${session.token}` } : {},
+        });
+        const blob = await response.blob();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'student_import_template.csv';
+        a.click();
+      } else {
+        const csv = 'full_name,email,reg_number,program,year_of_study,level,status,password\nHadiza Bello,hadiza@example.com,GNS/2020/0001,General Nursing,3,300,graduated,changeme123\nAminu Yusuf,aminu@example.com,GNS/2024/0042,Basic Midwifery,1,100,active,changeme123\n';
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'student_import_template.csv';
+        a.click();
       }
     },
 
@@ -849,6 +901,29 @@ export const api = {
             reg_number: std?.reg_number
           };
         });
+      }
+    },
+
+    async create(studentId: string, amount: number, purpose: string, status: string = 'pending'): Promise<Payment> {
+      const config = getGoBackendConfig();
+      if (config.enabled) {
+        return apiRequest<Payment>('/api/payments', {
+          method: 'POST',
+          body: JSON.stringify({ student_id: studentId, amount, purpose, status }),
+        });
+      } else {
+        const list = LocalDatabase.payments;
+        const newObj: Payment = {
+          id: 'pay_' + Math.random().toString(36).slice(2, 8),
+          student_id: studentId,
+          amount,
+          purpose,
+          status: status as 'paid' | 'pending' | 'overdue',
+          created_at: new Date().toISOString(),
+          reference: 'REF-' + Math.random().toString(36).slice(2, 10).toUpperCase(),
+        };
+        LocalDatabase.payments = [...list, newObj];
+        return newObj;
       }
     },
 

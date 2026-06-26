@@ -98,6 +98,10 @@ func main() {
 			Put("/api/students/{id}", studentHandler.Update)
 		r.With(auth.RequireRole("Admin")).
 			Delete("/api/students/{id}", studentHandler.Delete)
+		r.With(auth.RequireRole("Admin", "Registrar")).
+			Post("/api/students/bulk-import", studentHandler.BulkImport)
+		r.With(auth.RequireRole("Admin", "Registrar")).
+			Get("/api/students/bulk-import/template", studentHandler.BulkImportTemplate)
 
 		// Staff
 		r.With(auth.RequireRole("Admin", "Provost")).
@@ -128,10 +132,16 @@ func main() {
 			Post("/api/results/save", resultHandler.Save)
 		r.With(auth.RequireRole("Lecturer", "Admin")).
 			Put("/api/results/{id}", resultHandler.Update)
+		r.With(auth.RequireRole("Admin", "Registrar", "Lecturer")).
+			Post("/api/results/bulk-import", resultHandler.BulkImport)
+		r.With(auth.RequireRole("Student", "Admin", "Registrar", "Provost")).
+			Get("/api/results/transcript/{student_id}", resultHandler.Transcript)
 
 		// Payments
 		r.With(auth.RequireRole("Bursar", "Admin", "Provost", "Student")).
 			Get("/api/payments", paymentHandler.List)
+		r.With(auth.RequireRole("Bursar", "Admin")).
+			Post("/api/payments", paymentHandler.Create)
 		r.With(auth.RequireRole("Bursar", "Admin")).
 			Put("/api/payments/{id}/verify", paymentHandler.Verify)
 
